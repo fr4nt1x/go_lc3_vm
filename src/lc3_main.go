@@ -95,6 +95,13 @@ func update_flags(r uint16) {
 
 //instructions
 func br(instr uint16) {
+	cc := (instr >> 9) & 0x7
+
+	pcOffset9 := instr & 0x1FF
+	if cc&reg[R_COND] != 0 {
+		reg[R_PC] += 1 + signExtend(pcOffset9, 9)
+	}
+
 }
 
 func add(instr uint16) {
@@ -114,16 +121,38 @@ func add(instr uint16) {
 }
 
 func ld(instr uint16) {
-
 }
-func st(instr uint16)   {}
-func jsr(instr uint16)  {}
-func and(instr uint16)  {}
-func ldr(instr uint16)  {}
-func str(instr uint16)  {}
-func rti(instr uint16)  {}
-func not(instr uint16)  {}
-func ldi(instr uint16)  {}
+
+func st(instr uint16)  {}
+func jsr(instr uint16) {}
+func and(instr uint16) {
+	destReg := (instr >> 9) & 0x7
+	src1 := (instr >> 6) & 0x7
+	if !isBitnSet(instr, 5) {
+		//and1
+		src2 := instr & 0x7
+		reg[destReg] = reg[src1] & reg[src2]
+	} else {
+		//and2
+		value := signExtend(instr&0x001F, 5)
+		reg[destReg] = reg[src1] & value
+	}
+	update_flags(destReg)
+}
+func ldr(instr uint16) {}
+func str(instr uint16) {}
+func rti(instr uint16) {}
+func not(instr uint16) {}
+func ldi(instr uint16) {
+	destReg := (instr >> 9) & 0x7
+	pcOffset9 := instr & 0x1FF
+	signExtendedOffset := signExtend(pcOffset9, 9)
+	address := reg[R_PC] + 1 + signExtendedOffset
+	address = mr(address)
+	reg[destReg] = mr(address)
+	update_flags(destReg)
+}
+
 func sti(instr uint16)  {}
 func jmp(instr uint16)  {}
 func res(instr uint16)  {}
@@ -154,6 +183,7 @@ func main() {
 	mw(PC_START, testinstr)
 	reg[1] = 0xffff
 	reg[2] = 0xffff
+	update_flags(0) //Initiate condition code
 	for running {
 		instruction := mr(reg[R_PC])
 		op_code := instruction >> 12
