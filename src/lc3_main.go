@@ -121,10 +121,24 @@ func add(instr uint16) {
 }
 
 func ld(instr uint16) {
+	destReg := (instr >> 9) & 0x7
+	pcOffset9 := instr & 0x1FF
+	signExtendedOffset := signExtend(pcOffset9, 9)
+	address := reg[R_PC] + 1 + signExtendedOffset
+	reg[destReg] = mr(address)
+	update_flags(destReg)
 }
 
-func st(instr uint16)  {}
+func st(instr uint16) {
+	srcReg := (instr >> 9) & 0x7
+	pcOffset9 := instr & 0x1FF
+	signExtendedOffset := signExtend(pcOffset9, 9)
+	address := reg[R_PC] + 1 + signExtendedOffset
+	mw(address, reg[srcReg])
+}
+
 func jsr(instr uint16) {}
+
 func and(instr uint16) {
 	destReg := (instr >> 9) & 0x7
 	src1 := (instr >> 6) & 0x7
@@ -139,10 +153,28 @@ func and(instr uint16) {
 	}
 	update_flags(destReg)
 }
-func ldr(instr uint16) {}
+
+func ldr(instr uint16) {
+	destReg := (instr >> 9) & 0x7
+	pcOffset6 := instr & 0x3F
+	baseReg := (instr >> 6) & 0x7
+	signExtendedOffset := signExtend(pcOffset6, 6)
+	address := reg[baseReg] + signExtendedOffset
+	reg[destReg] = mr(address)
+	update_flags(destReg)
+}
+
 func str(instr uint16) {}
-func rti(instr uint16) {}
-func not(instr uint16) {}
+
+func rti(instr uint16) { //Unused
+}
+
+func not(instr uint16) {
+	destReg := (instr >> 9) & 0x7
+	srcReg := (instr >> 6) & 0x7
+	reg[destReg] = ^reg[srcReg]
+	update_flags(destReg)
+}
 func ldi(instr uint16) {
 	destReg := (instr >> 9) & 0x7
 	pcOffset9 := instr & 0x1FF
@@ -153,10 +185,25 @@ func ldi(instr uint16) {
 	update_flags(destReg)
 }
 
-func sti(instr uint16)  {}
-func jmp(instr uint16)  {}
-func res(instr uint16)  {}
-func lea(instr uint16)  {}
+func sti(instr uint16) {
+	srcReg := (instr >> 9) & 0x7
+	pcOffset9 := instr & 0x1FF
+	signExtendedOffset := signExtend(pcOffset9, 9)
+	address := reg[R_PC] + 1 + signExtendedOffset
+	address = mr(address)
+	mw(address, reg[srcReg])
+}
+func jmp(instr uint16) {}
+func res(instr uint16) {}
+
+func lea(instr uint16) {
+	destReg := (instr >> 9) & 0x7
+	pcOffset9 := instr & 0x1FF
+	signExtendedOffset := signExtend(pcOffset9, 9)
+	reg[destReg] = reg[R_PC] + 1 + signExtendedOffset
+	update_flags(destReg)
+}
+
 func trap(instr uint16) {}
 
 //array of op functions
